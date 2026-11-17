@@ -6,6 +6,15 @@ This project examines the relationship between depressive symptom severity, heal
 
 Using data from the National Health and Nutrition Examination Survey (NHANES) 2021–2023, the analysis explores patterns in mental health service use and healthcare access.
 
+## View the Project
+
+- [Interactive Dashboard](https://yomer-data.github.io/mental-health-healthcare-access/dashboard.html)
+- [Full Research Report](https://yomer-data.github.io/mental-health-healthcare-access/research_report.html)
+
+The dashboard presents survey-weighted descriptive
+statistics, interactive visualizations, and adjusted
+logistic regression results.
+
 ## Research Questions
 
 1. How does mental health service use vary by depressive symptom severity?
@@ -38,7 +47,7 @@ The adjusted regression model included 5,430 participants with complete data.
 
 - Approximately 32.7% of adults had at least mild depressive symptoms.
 - Mental health service use increased with depressive symptom severity.
-- Adults with severe symptoms had 9.22 times the adjusted odds of service use compared with adults with minimal symptoms.
+- Adults with severe depressive symptoms had 9.22 times the adjusted odds of reporting mental health service use compared with adults with minimal symptoms, after adjustment for insurance status and usual source of care.
 - Uninsured adults had approximately 46% lower adjusted odds of mental health service use than insured adults.
 - Adults without a usual source of care had approximately 42% lower adjusted odds of service use.
 
@@ -54,6 +63,16 @@ These findings represent associations, not causal relationships.
 - survey
 - haven
 - ggplot2
+
+## Reproducibility
+
+The analysis was conducted in R using NHANES public-use
+data files. The R script documents the data preparation,
+variable construction, survey design specification,
+descriptive analysis, and regression modeling.
+
+The analysis accounts for NHANES sampling weights,
+strata, and primary sampling units.
 
 ## Project Deliverables
 
