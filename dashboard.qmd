@@ -1,0 +1,381 @@
+
+---
+title: "Depressive Symptoms, Health Insurance, and Mental Health Service Use"
+subtitle: "An analysis of U.S. adults using NHANES 2021–2023"
+format:
+  dashboard:
+    theme: cosmo
+    orientation: columns
+    scrolling: true
+---
+
+## Overview
+**Author:** Yusuf H. Omer
+
+### Project Background
+
+This project examines the relationship between depressive symptom severity, health insurance coverage, usual source of healthcare, and mental health service use among U.S. adults.
+
+The analysis uses data from the National Health and Nutrition Examination Survey (NHANES) 2021–2023.
+
+### Research Questions
+
+- How does mental health service use vary by depressive symptom severity?
+- Does mental health service use differ by health insurance status?
+- Is having a usual source of healthcare associated with mental health service use?
+
+### Methodology
+
+Depressive symptoms were measured using the nine-item Patient Health Questionnaire (PHQ-9). Survey-weighted descriptive statistics and logistic regression were used to examine associations.
+
+PHQ-9 scores measure symptom severity and are not clinical diagnoses.
+
+```{r}
+#| label: setup
+#| include: false
+
+library(dplyr)
+library(survey)
+library(plotly)
+
+# Load the cleaned NHANES analysis dataset
+analysis_base <- readRDS("data/cleaned/analysis_base.rds")
+
+# Recreate the NHANES survey design
+nhanes_design <- svydesign(
+  ids = ~SDMVPSU,
+  strata = ~SDMVSTRA,
+  weights = ~WTMEC2YR,
+  data = analysis_base,
+  nest = TRUE
+)
+
+# Calculate weighted PHQ-9 severity distribution
+phq9_design <- subset(
+  nhanes_design,
+  !is.na(phq9_severity)
+)
+
+phq9_distribution <- svymean(
+  ~phq9_severity,
+  design = phq9_design,
+  na.rm = TRUE
+)
+
+# Prepare chart data
+phq9_plot_data <- data.frame(
+  severity = levels(analysis_base$phq9_severity),
+  percentage = as.numeric(coef(phq9_distribution)) * 100
+)
+```
+
+# Depressive Symptoms
+
+## Row
+
+### PHQ-9 Symptom Severity Distribution
+```{r}
+plot_ly(
+  data = phq9_plot_data,
+  x = ~severity,
+  y = ~percentage,
+  type = "bar",
+  marker = list(color = "#2878A8"),
+  text = ~paste0(round(percentage, 1), "%"),
+  textposition = "outside",
+  hovertemplate = paste(
+    "<b>%{x}</b>",
+    "<br>Weighted percentage: %{y:.1f}%",
+    "<extra></extra>"
+  )
+) %>%
+  layout(
+    title = "Depressive Symptom Severity Among U.S. Adults",
+    xaxis = list(
+      title = "PHQ-9 Severity",
+      categoryorder = "array",
+      categoryarray = c(
+        "Minimal",
+        "Mild",
+        "Moderate",
+        "Moderately severe",
+        "Severe"
+      )
+    ),
+    yaxis = list(
+      title = "Weighted Percentage (%)",
+      range = c(0, 80)
+    ),
+    margin = list(b = 100)
+  )
+```
+### Mental Health Service Use by PHQ-9 Severity
+```{r}
+service_design <- subset(
+  nhanes_design,
+  !is.na(phq9_severity) & !is.na(mental_health_service)
+)
+
+service_by_severity <- svyby(
+  ~mental_health_service,
+  ~phq9_severity,
+  design = service_design,
+  FUN = svymean,
+  na.rm = TRUE
+)
+
+service_plot_data <- as.data.frame(service_by_severity)
+
+service_plot_data$percentage <-
+  service_plot_data$mental_health_serviceYes * 100
+
+plot_ly(
+  data = service_plot_data,
+  x = ~phq9_severity,
+  y = ~percentage,
+  type = "bar",
+  marker = list(color = "#2878A8"),
+  text = ~paste0(round(percentage, 1), "%"),
+  textposition = "outside",
+  hovertemplate = paste(
+    "<b>%{x}</b>",
+    "<br>Mental health service use: %{y:.1f}%",
+    "<extra></extra>"
+  )
+) %>%
+  layout(
+    title = "Mental Health Service Use by Depressive Symptom Severity",
+    xaxis = list(
+      title = "PHQ-9 Severity",
+      categoryorder = "array",
+      categoryarray = c(
+        "Minimal",
+        "Mild",
+        "Moderate",
+        "Moderately severe",
+        "Severe"
+      )
+    ),
+    yaxis = list(
+      title = "Weighted Percentage Using Services (%)",
+      range = c(0, 65)
+    ),
+    margin = list(b = 100)
+  )
+```
+### Mental Health Service Use by Insurance Status
+```{r}
+insurance_design <- subset(
+  nhanes_design,
+  !is.na(insured) & !is.na(mental_health_service)
+)
+
+service_by_insurance <- svyby(
+  ~mental_health_service,
+  ~insured,
+  design = insurance_design,
+  FUN = svymean,
+  na.rm = TRUE
+)
+
+insurance_plot_data <- as.data.frame(service_by_insurance)
+
+insurance_plot_data$percentage <-
+  insurance_plot_data$mental_health_serviceYes * 100
+
+plot_ly(
+  data = insurance_plot_data,
+  x = ~insured,
+  y = ~percentage,
+  type = "bar",
+  marker = list(color = "#2878A8"),
+  text = ~paste0(round(percentage, 1), "%"),
+  textposition = "outside",
+  hovertemplate = paste(
+    "<b>%{x}</b>",
+    "<br>Mental health service use: %{y:.1f}%",
+    "<extra></extra>"
+  )
+) %>%
+  layout(
+    title = "Mental Health Service Use by Insurance Status",
+    xaxis = list(title = "Health Insurance Status"),
+    yaxis = list(
+      title = "Weighted Percentage Using Services (%)",
+      range = c(0, 25)
+    ),
+    margin = list(b = 100)
+  )
+```
+# Factors Associated with Mental Health Service Use
+
+## Row
+
+### Adjusted Odds Ratios
+
+```{r}
+model_design <- subset(
+  nhanes_design,
+  !is.na(phq9_severity) &
+    !is.na(mental_health_service) &
+    !is.na(insured) &
+    !is.na(usual_care_binary)
+)
+
+service_model_binary <- svyglm(
+  I(mental_health_service == "Yes") ~
+    phq9_severity + insured + usual_care_binary,
+  design = model_design,
+  family = quasibinomial()
+)
+
+model_ci <- confint(service_model_binary)
+model_summary <- coef(summary(service_model_binary))
+
+model_plot_data <- data.frame(
+  term = names(coef(service_model_binary)),
+  odds_ratio = exp(coef(service_model_binary)),
+  lower_95 = exp(model_ci[, 1]),
+  upper_95 = exp(model_ci[, 2]),
+  p_value = model_summary[, 4]
+)
+
+model_plot_data <- model_plot_data[
+  model_plot_data$term != "(Intercept)",
+]
+
+model_plot_data$label <- dplyr::case_when(
+  model_plot_data$term == "phq9_severityMild" ~ "Mild symptoms",
+  model_plot_data$term == "phq9_severityModerate" ~ "Moderate symptoms",
+  model_plot_data$term == "phq9_severityModerately severe" ~ "Moderately severe symptoms",
+  model_plot_data$term == "phq9_severitySevere" ~ "Severe symptoms",
+  model_plot_data$term == "insuredUninsured" ~ "Uninsured",
+  model_plot_data$term == "usual_care_binaryNo usual place" ~ "No usual place of care",
+  TRUE ~ model_plot_data$term
+)
+
+model_plot_data$upper_error <-
+  model_plot_data$upper_95 - model_plot_data$odds_ratio
+
+model_plot_data$lower_error <-
+  model_plot_data$odds_ratio - model_plot_data$lower_95
+
+model_plot_data$label <- factor(
+  model_plot_data$label,
+  levels = rev(model_plot_data$label)
+)
+
+plot_ly(
+  data = model_plot_data,
+  x = ~odds_ratio,
+  y = ~label,
+  type = "scatter",
+  mode = "markers",
+  marker = list(color = "#2878A8", size = 10),
+  error_x = list(
+    type = "data",
+    symmetric = FALSE,
+    array = ~upper_error,
+    arrayminus = ~lower_error,
+    color = "#2878A8"
+  ),
+  hovertemplate = paste(
+    "<b>%{y}</b>",
+    "<br>Adjusted odds ratio: %{x:.2f}",
+    "<extra></extra>"
+  )
+) %>%
+  layout(
+    title = "Factors Associated with Mental Health Service Use",
+    xaxis = list(
+      title = "Adjusted Odds Ratio (log scale)",
+      type = "log"
+    ),
+    yaxis = list(title = ""),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = 1,
+        x1 = 1,
+        y0 = 0,
+        y1 = 1,
+        xref = "x",
+        yref = "paper",
+        line = list(color = "gray", dash = "dash")
+      )
+    ),
+    margin = list(l = 220, r = 60, t = 100, b = 80)
+  )
+```
+# Key Findings
+
+## Depressive Symptoms and Mental Health Service Use
+
+Mental health service use increased with depressive symptom severity. Approximately 10.1% of adults in the Minimal PHQ-9 category reported using mental health services, compared with 49.0% of adults in the Severe category.
+
+## Health Insurance Coverage
+
+Approximately 17.0% of insured adults reported mental health service use, compared with 9.0% of uninsured adults. This suggests an association between insurance coverage and access to mental health services.
+
+
+## Adjusted Regression Findings
+
+After accounting for other factors:
+
+- **Depressive symptoms:** Adults with Severe symptoms had 9.2 times the odds of service use compared with those reporting Minimal symptoms.
+- **Insurance:** Uninsured adults had 46% lower odds of service use.
+- **Usual source of care:** Adults without a usual place of care had 42% lower odds of service use.
+
+*Findings represent adjusted associations, not causal effects.*
+
+# Methodology
+
+## Data Source
+
+This analysis uses publicly available data from the National Health and Nutrition Examination Survey (NHANES) 2021–2023. The analysis includes U.S. adults aged 18 and older who participated in the Mobile Examination Center component.
+
+## Measures
+
+Depressive symptoms were assessed using the nine-item Patient Health Questionnaire (PHQ-9). Scores ranged from 0 to 27 and were grouped into five severity categories: Minimal, Mild, Moderate, Moderately severe, and Severe. The PHQ-9 is a screening measure and does not establish a clinical diagnosis.
+
+Mental health service use was measured by self-reported counseling or therapy during the previous 12 months. Health insurance status and usual source of care were also examined.
+
+## Statistical Analysis
+
+Survey-weighted descriptive statistics accounted for the NHANES sampling weights, strata, and primary sampling units. Survey-weighted logistic regression was used to estimate adjusted associations between depressive symptom severity, insurance status, usual source of care, and mental health service use. The adjusted regression model included 5,430 participants with complete data.
+
+# Limitations
+
+- **Cross-sectional design:** The data show associations at a point in time and cannot establish cause and effect.
+- **Self-reported information:** Mental health service use and insurance status may be affected by recall or reporting errors.
+- **Measurement timing:** Insurance status reflects current coverage, while mental health service use refers to the previous 12 months.
+- **Screening measure:** The PHQ-9 measures depressive symptom severity and does not establish a clinical diagnosis.
+- **Missing data:** The adjusted regression analysis included 5,430 participants with complete data.
+- **Subgroup precision:** Estimates for participants with severe depressive symptoms may be less precise because this group was relatively small.
+
+Results should be interpreted as survey-weighted associations, not causal effects.
+
+### Full Regression Results
+
+The table below presents the adjusted odds ratios and 95% confidence intervals from the survey-weighted logistic regression model.
+
+```{r}
+#| echo: false
+regression_results <- read.csv(
+  "outputs/tables/adjusted_logistic_regression_binary_care.csv"
+)
+
+names(regression_results) <- c(
+  "Predictor",
+  "Adjusted Odds Ratio",
+  "95% CI Lower",
+  "95% CI Upper",
+  "P-value"
+)
+
+knitr::kable(
+  regression_results,
+  digits = 3,
+  caption = "Survey-Weighted Logistic Regression Results"
+)
+```
