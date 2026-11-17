@@ -39,13 +39,14 @@ Source: https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Cycle=2021-2023
 - PHQ-9 depressive symptom scoring and severity categories
 - Survey-weighted descriptive statistics
 - Survey-weighted logistic regression
+- Usual source of care was categorized as having at least one usual place of care versus having no usual place of care.
 - NHANES sampling weights, strata, and primary sampling units
 
 The adjusted regression model included 5,430 participants with complete data.
 
 ## Key Findings
 
-- Approximately 32.7% of adults had at least mild depressive symptoms.
+- Approximately 32.7% of adults with valid PHQ-9 scores had at least mild depressive symptoms, based on survey-weighted estimates.
 - Mental health service use increased with depressive symptom severity.
 - Adults with severe depressive symptoms had 9.22 times the adjusted odds of reporting mental health service use compared with adults with minimal symptoms, after adjustment for insurance status and usual source of care.
 - Uninsured adults had approximately 46% lower adjusted odds of mental health service use than insured adults.
