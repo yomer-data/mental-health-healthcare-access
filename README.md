@@ -26,7 +26,7 @@ Data files used:
 - Health Care Utilization (HUQ_L)
 - Health Insurance (HIQ_L)
 
-Source: https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Cycle=2021-2023
+Source: [CDC NHANES 2021–2023](https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Cycle=2021-2023)
 
 ## Methods
 - Adult participants aged 18 and older
