@@ -1,0 +1,25 @@
+@media print {
+  body {
+    font-size: 10pt;
+  }
+
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  table {
+    width: 100% !important;
+    font-size: 8pt;
+    table-layout: auto;
+  }
+
+  th, td {
+    overflow-wrap: break-word;
+    padding: 4px;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+}
