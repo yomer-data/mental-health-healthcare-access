@@ -1,0 +1,15 @@
+# Raw NHANES data
+data/raw/
+
+# Temporary R workspace
+*.RData
+*.rda
+.Rhistory
+.RData
+
+# Operating system files
+.DS_Store
+
+# Temporary and backup files
+*~
+*.bak
